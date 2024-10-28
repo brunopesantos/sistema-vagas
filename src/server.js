@@ -1,36 +1,45 @@
-
+// Importa o módulo express e o CORS
 const express = require('express');
-const cors = require('cors'); // Importa o CORS
+const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors()); // Habilita o CORS para todas as rotas
-app.use(express.json());
-
 // Configurações iniciais
-let vagasRestantes = 50;
-const codigoDoDia = "123456";
+let vagasRestantes = 10; // Defina o número inicial de vagas
+const codigoDoDia = "123456"; // Código do dia para acesso
+
+// Middleware para habilitar CORS e interpretar JSON
+app.use(cors());
+app.use(express.json());
 
 // Rota para verificar o código e disponibilidade de vagas
 app.post('/api/verify-code', (req, res) => {
     const { codigo } = req.body;
 
+    // Verifica se o código está correto
     if (codigo !== codigoDoDia) {
         return res.json({ message: "Código incorreto. Tente novamente." });
     }
 
+    // Verifica se ainda há vagas
     if (vagasRestantes <= 0) {
         return res.json({ message: "Vagas esgotadas." });
     }
 
+    // Reduz o número de vagas e confirma o acesso
     vagasRestantes -= 1;
     res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
 });
 
+// Rota para obter o número de vagas restantes
+app.get('/vagas-restantes', (req, res) => {
+    res.json({ vagasRestantes });
+});
+
 // Função para resetar as vagas diariamente
 function resetarVagasDiarias() {
-    vagasRestantes = 10;
+    vagasRestantes = 10; // Define o número de vagas que deseja diariamente
     console.log("Vagas resetadas para o novo dia!");
 }
 
@@ -41,3 +50,4 @@ setInterval(resetarVagasDiarias, 86400000);
 app.listen(port, () => {
     console.log(`Servidor rodando na porta ${port}`);
 });
+
