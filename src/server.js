@@ -32,10 +32,11 @@ app.post('/api/verify-code', (req, res) => {
     res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
 });
 
-// Rota para obter o número de vagas restantes
-app.get('/vagas-restantes', (req, res) => {
+// Endpoint para obter o número de vagas restantes
+app.get('/api/vagas-restantes', (req, res) => {
     res.json({ vagasRestantes });
 });
+
 
 // Função para resetar as vagas diariamente
 function resetarVagasDiarias() {
