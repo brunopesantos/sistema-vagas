@@ -9,7 +9,7 @@ app.use(cors()); // Habilita o CORS para todas as rotas
 app.use(express.json());
 
 // Configurações iniciais
-let vagasRestantes = 10;
+let vagasRestantes = 50;
 const codigoDoDia = "123456";
 
 // Rota para verificar o código e disponibilidade de vagas
@@ -28,10 +28,14 @@ app.post('/api/verify-code', (req, res) => {
     res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
 });
 
-// Rota para obter o número de vagas restantes
-app.get('/api/vagas-restantes', (req, res) => {
-    res.json({ vagasRestantes });
-});
+// Função para resetar as vagas diariamente
+function resetarVagasDiarias() {
+    vagasRestantes = 10;
+    console.log("Vagas resetadas para o novo dia!");
+}
+
+// Executa a função de reset a cada 24 horas (86400000 ms)
+setInterval(resetarVagasDiarias, 86400000);
 
 // Inicia o servidor na porta especificada
 app.listen(port, () => {
