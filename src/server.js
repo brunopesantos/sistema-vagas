@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors'); // Importa o CORS
 
@@ -25,6 +26,11 @@ app.post('/api/verify-code', (req, res) => {
 
     vagasRestantes -= 1;
     res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
+});
+
+// Rota para obter o número de vagas restantes
+app.get('/api/vagas-restantes', (req, res) => {
+    res.json({ vagasRestantes });
 });
 
 // Inicia o servidor na porta especificada
