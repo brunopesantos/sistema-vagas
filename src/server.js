@@ -6,7 +6,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Configurações iniciais
-let vagasRestantes = 10; // Defina o número inicial de vagas
+let vagasRestantes = 20; // Defina o número inicial de vagas
 const codigoDoDia = "123456"; // Código do dia para acesso
 
 // Middleware para habilitar CORS e interpretar JSON
