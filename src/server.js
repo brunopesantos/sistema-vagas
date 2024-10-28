@@ -6,15 +6,27 @@ const port = process.env.PORT || 3000;
 // Middleware para interpretar JSON
 app.use(express.json());
 
-// Rota para a URL raiz
-app.get('/', (req, res) => {
-    res.send('Servidor está funcionando!');
-});
+// Configurações iniciais (exemplo simples para controle de vagas e código do dia)
+let vagasRestantes = 10; // Defina o número de vagas
+const codigoDoDia = "123456"; // Exemplo de código, pode ser dinâmico
 
-// Exemplo de rota POST para registro de acesso
-app.post('/api/register-access', (req, res) => {
-    // Coloque aqui a lógica de registro de acesso
-    res.send('Acesso registrado com sucesso!');
+// Rota para verificar o código e disponibilidade de vagas
+app.post('/api/verify-code', (req, res) => {
+    const { codigo } = req.body;
+
+    // Verifica se o código está correto
+    if (codigo !== codigoDoDia) {
+        return res.json({ message: "Código incorreto. Tente novamente." });
+    }
+
+    // Verifica se ainda há vagas
+    if (vagasRestantes <= 0) {
+        return res.json({ message: "Vagas esgotadas." });
+    }
+
+    // Reduz o número de vagas e confirma
+    vagasRestantes -= 1;
+    res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
 });
 
 // Inicia o servidor na porta especificada
