@@ -1,68 +1,63 @@
 const express = require('express');
 const cors = require('cors');
-const jwt = require('jsonwebtoken'); // Importa o pacote JWT
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
-
+// Configurações iniciais
 let vagasRestantes = 10;
 const codigoDoDia = "123456";
-const limiteTentativasPorIP = 2;
-const tentativasPorIP = {};
+const tentativasDiarias = {}; // Objeto para armazenar tentativas por IP
 
-// Configura o segredo para o token JWT
-const jwtSecret = 'seuSegredoSeguranca';
+app.use(cors());
+app.use(express.json());
 
 // Função para resetar as vagas diariamente
 function resetarVagasDiarias() {
     vagasRestantes = 10;
-    Object.keys(tentativasPorIP).forEach(ip => {
-        tentativasPorIP[ip] = 0;
-    });
-    console.log("Vagas e tentativas resetadas para o novo dia!");
+    console.log("Vagas resetadas para o novo dia!");
 }
 
+// Executa a função de reset a cada 24 horas (86400000 ms)
 setInterval(resetarVagasDiarias, 86400000);
 
+// Rota para verificar o código e disponibilidade de vagas
 app.post('/api/verify-code', (req, res) => {
     const { codigo } = req.body;
     const ip = req.ip;
 
-    if (tentativasPorIP[ip] === undefined) {
-        tentativasPorIP[ip] = 0;
+    // Verifica se o IP já atingiu o limite diário de tentativas
+    if (!tentativasDiarias[ip]) {
+        tentativasDiarias[ip] = 0;
+    }
+    if (tentativasDiarias[ip] >= 2) {
+        return res.json({ message: "Você já atingiu o limite de tentativas diárias." });
     }
 
-    if (tentativasPorIP[ip] >= limiteTentativasPorIP) {
-        return res.status(429).json({ message: "Limite de tentativas atingido. Tente novamente amanhã." });
-    }
-
+    // Verifica se o código está correto
     if (codigo !== codigoDoDia) {
-        tentativasPorIP[ip] += 1;
+        tentativasDiarias[ip] += 1;
         return res.json({ message: "Código incorreto. Tente novamente." });
     }
 
+    // Verifica se ainda há vagas
     if (vagasRestantes <= 0) {
         return res.json({ message: "Vagas esgotadas." });
     }
 
+    // Reduz o número de vagas e confirma
     vagasRestantes -= 1;
-    
-    // Gera um token JWT com validade de 24 horas
-    const token = jwt.sign({ access: 'autorizado' }, jwtSecret, { expiresIn: '24h' });
+    tentativasDiarias[ip] += 1;
 
-    res.json({ message: "Vaga confirmada! Redirecionando para a página de venda...", token });
+    res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
 });
 
+// Rota para retornar o número de vagas restantes
 app.get('/api/vagas-restantes', (req, res) => {
     res.json({ vagasRestantes });
 });
 
+// Inicia o servidor na porta especificada
 app.listen(port, () => {
     console.log(`Servidor rodando na porta ${port}`);
 });
-
-
-
