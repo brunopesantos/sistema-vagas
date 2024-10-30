@@ -1,48 +1,43 @@
 const express = require('express');
 const cors = require('cors');
-const cookieParser = require('cookie-parser'); // Importa o cookie-parser
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser'); // Importando o cookie-parser
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configuração do CORS e cookies
 app.use(cors());
 app.use(express.json());
-app.use(cookieParser()); // Habilita o uso de cookies
+app.use(cookieParser()); // Usando o cookie-parser
 
-// Limite de tentativas diárias por IP
-const dailyAccessLimit = rateLimit({
+// Configuração de limite de tentativas por IP
+const limiter = rateLimit({
     windowMs: 24 * 60 * 60 * 1000, // 24 horas
-    max: 2, // Limita a 2 tentativas por IP
-    message: { message: 'Você excedeu o limite diário de tentativas.' },
-    keyGenerator: (req) => req.ip
+    max: 2, // Limite de tentativas por dia
+    message: "Você excedeu o limite diário de tentativas."
 });
 
-app.use('/api/verify-code', dailyAccessLimit);
+// Middleware para limitar tentativas
+app.use('/api/verify-code', limiter);
 
-// Configurações iniciais de vagas
+// Variáveis iniciais
 let vagasRestantes = 10;
-const codigoDoDia = "123456"; // Código do dia
+const codigoDoDia = "123456";
 
-// Rota para verificar o código e reduzir vagas
+// Rota para verificar o código e disponibilidade de vagas
 app.post('/api/verify-code', (req, res) => {
     const { codigo } = req.body;
-    const userIP = req.ip;
 
-    // Verifica o código do dia
     if (codigo !== codigoDoDia) {
         return res.status(400).json({ message: "Código incorreto. Tente novamente." });
     }
 
-    // Verifica se há vagas disponíveis
     if (vagasRestantes <= 0) {
         return res.status(400).json({ message: "Vagas esgotadas." });
     }
 
-    // Reduz uma vaga e armazena o status de acesso diário por IP
     vagasRestantes -= 1;
-    res.cookie(`access_${userIP}`, true, { maxAge: 24 * 60 * 60 * 1000 }); // Cookie de controle de acesso diário
+    res.cookie('access_granted', 'true', { maxAge: 24 * 60 * 60 * 1000, httpOnly: true }); // Define cookie para controle
     res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
 });
 
@@ -51,15 +46,7 @@ app.get('/api/vagas-restantes', (req, res) => {
     res.json({ vagasRestantes });
 });
 
-// Função para resetar as vagas diariamente
-function resetarVagasDiarias() {
-    vagasRestantes = 10;
-    console.log("Vagas resetadas para o novo dia!");
-}
-
-// Executa a função de reset a cada 24 horas
-setInterval(resetarVagasDiarias, 24 * 60 * 60 * 1000);
-
+// Inicialização do servidor
 app.listen(port, () => {
     console.log(`Servidor rodando na porta ${port}`);
 });
