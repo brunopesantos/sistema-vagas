@@ -1,6 +1,5 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
@@ -16,29 +15,40 @@ app.use((req, res, next) => {
     const maxAttempts = 2; // Limite de tentativas
     const timeWindow = 24 * 60 * 60 * 1000; // Janela de tempo de 24 horas
 
+    console.log(`\n--- Verificação de acesso ---`);
+    console.log(`IP do usuário: ${ip}`);
+    console.log(`Cookie recebido: ${req.cookies.userAttempt}`);
+
     // Verificação de cookie
     if (!req.cookies.userAttempt) {
         res.cookie('userAttempt', 1, { maxAge: timeWindow });
+        console.log(`Cookie 'userAttempt' criado para o IP ${ip} com valor 1`);
     } else {
         const cookieAttempts = parseInt(req.cookies.userAttempt, 10);
         if (cookieAttempts >= maxAttempts) {
+            console.log(`Limite de tentativas por cookie excedido para IP ${ip}`);
             return res.status(429).json({ message: 'Limite de tentativas excedido. Tente novamente amanhã.' });
         }
         res.cookie('userAttempt', cookieAttempts + 1, { maxAge: timeWindow });
+        console.log(`Tentativa com cookie incrementada para o IP ${ip}, novo valor do cookie: ${cookieAttempts + 1}`);
     }
 
     // Verificação por IP
     if (!accessData[ip]) {
         accessData[ip] = { attempts: 1, timestamp: Date.now() };
+        console.log(`Primeira tentativa registrada para o IP ${ip}`);
     } else {
         const elapsedTime = Date.now() - accessData[ip].timestamp;
         if (elapsedTime < timeWindow) {
             if (accessData[ip].attempts >= maxAttempts) {
+                console.log(`Limite de tentativas por IP excedido para IP ${ip}`);
                 return res.status(429).json({ message: 'Limite de tentativas excedido para este IP.' });
             }
             accessData[ip].attempts += 1;
+            console.log(`Tentativa incrementada para o IP ${ip}, número de tentativas: ${accessData[ip].attempts}`);
         } else {
             accessData[ip] = { attempts: 1, timestamp: Date.now() };
+            console.log(`Janela de tempo renovada para o IP ${ip}`);
         }
     }
 
@@ -51,8 +61,10 @@ app.post('/api/verify-code', (req, res) => {
     const codigoCorreto = '123456'; // Código correto para teste
 
     if (codigo === codigoCorreto) {
+        console.log(`Código correto inserido para IP ${req.ip}`);
         return res.json({ message: 'Vaga confirmada! Redirecionando para a página de venda...' });
     } else {
+        console.log(`Código incorreto inserido para IP ${req.ip}`);
         return res.status(400).json({ message: 'Código incorreto. Tente novamente.' });
     }
 });
@@ -60,6 +72,7 @@ app.post('/api/verify-code', (req, res) => {
 // Endpoint para exibir o número de vagas restantes
 app.get('/api/vagas-restantes', (req, res) => {
     const vagasRestantes = 10; // Valor fixo para exemplo
+    console.log(`Número de vagas restantes solicitado: ${vagasRestantes}`);
     res.json({ vagasRestantes });
 });
 
