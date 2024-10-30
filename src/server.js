@@ -1,15 +1,13 @@
 const express = require('express');
-const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-app.use(cookieParser()); // Middleware para manipular cookies
 
 // Dados para armazenamento temporário de tentativas por IP
 let accessData = {};
 
-// Função de middleware para limitar o acesso baseado em IP e cookies
+// Função de middleware para limitar o acesso baseado em IP
 app.use((req, res, next) => {
     const ip = req.ip; 
     const maxAttempts = 2; // Limite de tentativas
@@ -17,21 +15,6 @@ app.use((req, res, next) => {
 
     console.log(`\n--- Verificação de acesso ---`);
     console.log(`IP do usuário: ${ip}`);
-    console.log(`Cookie recebido: ${req.cookies.userAttempt}`);
-
-    // Verificação de cookie
-    if (!req.cookies.userAttempt) {
-        res.cookie('userAttempt', 1, { maxAge: timeWindow });
-        console.log(`Cookie 'userAttempt' criado para o IP ${ip} com valor 1`);
-    } else {
-        const cookieAttempts = parseInt(req.cookies.userAttempt, 10);
-        if (cookieAttempts >= maxAttempts) {
-            console.log(`Limite de tentativas por cookie excedido para IP ${ip}`);
-            return res.status(429).json({ message: 'Limite de tentativas excedido. Tente novamente amanhã.' });
-        }
-        res.cookie('userAttempt', cookieAttempts + 1, { maxAge: timeWindow });
-        console.log(`Tentativa com cookie incrementada para o IP ${ip}, novo valor do cookie: ${cookieAttempts + 1}`);
-    }
 
     // Verificação por IP
     if (!accessData[ip]) {
