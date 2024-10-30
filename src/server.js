@@ -28,7 +28,8 @@ setInterval(resetarVagasDiarias, 86400000);
 const limiter = rateLimit({
     windowMs: 24 * 60 * 60 * 1000, // 24 horas
     max: 2, // Limite de 2 tentativas por dia
-    message: 'Limite de tentativas diárias excedido.'
+    message: 'Limite de tentativas diárias excedido.',
+    keyGenerator: (req) => req.ip // Garante que o IP do cliente é usado como chave
 });
 
 // Rota para verificar o código e disponibilidade de vagas com limite de tentativas
