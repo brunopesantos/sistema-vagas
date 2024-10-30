@@ -1,65 +1,62 @@
 const express = require('express');
-const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
-
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = 10000;
 
-app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
-// Configuração do trust proxy
-app.set('trust proxy', 1); // Confia no primeiro proxy para obter o IP correto
-
-// Configuração do limitador de tentativas por IP
-const limiter = rateLimit({
-    windowMs: 24 * 60 * 60 * 1000, // 24 horas
-    max: 2, // Limita a 2 tentativas por IP por dia
-    keyGenerator: (req) => req.ip, // Usa o IP diretamente
-    handler: (req, res) => {
-        res.status(429).json({
-            message: 'Você excedeu o limite de tentativas diárias.',
-        });
-    },
-});
-
-// Configurações iniciais
+// Variáveis de controle
 let vagasRestantes = 10;
-const codigoDoDia = "123456";
+const codigoDoDia = '123456';
+const maxTentativasPorIP = 5;
 
-// Rota para verificar o código e disponibilidade de vagas
-app.post('/api/verify-code', limiter, (req, res) => {
-    const { codigo } = req.body;
-
-    if (codigo !== codigoDoDia) {
-        return res.json({ message: "Código incorreto. Tente novamente." });
-    }
-
-    if (vagasRestantes <= 0) {
-        return res.json({ message: "Vagas esgotadas." });
-    }
-
-    vagasRestantes -= 1;
-    res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
+// Configuração do limitador por IP
+const accessLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 horas
+  max: maxTentativasPorIP, // número máximo de tentativas por IP por dia
+  message: 'Número de tentativas excedido para este IP. Tente novamente amanhã.',
+  keyGenerator: (req) => req.ip, // usa o IP do usuário para limitar
 });
 
-// Rota para obter o número de vagas restantes
-app.get('/api/vagas-restantes', (req, res) => {
-    res.json({ vagasRestantes });
-});
+// Middleware para verificar o limite de tentativas com cookies
+function limitarAcessoCookie(req, res, next) {
+  const tentativasCookie = req.cookies.tentativas || 0;
 
-// Função para resetar as vagas diariamente
-function resetarVagasDiarias() {
-    vagasRestantes = 10;
-    console.log("Vagas resetadas para o novo dia!");
+  if (tentativasCookie >= 2) {
+    return res.status(429).json({ message: 'Tentativas diárias excedidas.' });
+  } else {
+    res.cookie('tentativas', Number(tentativasCookie) + 1, { maxAge: 24 * 60 * 60 * 1000 }); // incrementa tentativas
+    next();
+  }
 }
 
-// Executa a função de reset a cada 24 horas (86400000 ms)
-setInterval(resetarVagasDiarias, 86400000);
+// Rota para verificar o código e reduzir as vagas
+app.post('/api/verify-code', [accessLimiter, limitarAcessoCookie], (req, res) => {
+  const { codigo } = req.body;
 
-// Inicia o servidor na porta especificada
-app.listen(port, () => {
-    console.log(`Servidor rodando na porta ${port}`);
+  if (codigo === codigoDoDia && vagasRestantes > 0) {
+    vagasRestantes -= 1;
+    res.json({ message: 'Vaga confirmada! Redirecionando para a página de venda...' });
+  } else if (vagasRestantes <= 0) {
+    res.json({ message: 'Vagas esgotadas para hoje.' });
+  } else {
+    res.json({ message: 'Código incorreto. Tente novamente.' });
+  }
+});
+
+// Rota para retornar o número de vagas restantes
+app.get('/api/vagas-restantes', (req, res) => {
+  res.json({ vagasRestantes });
+});
+
+// Rota para resetar as vagas (pode ser chamada manualmente ou por cron job)
+app.post('/api/reset-vagas', (req, res) => {
+  vagasRestantes = 10;
+  res.json({ message: 'Vagas resetadas para o novo dia.' });
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
