@@ -3,24 +3,30 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-// Configure o trust proxy
+// Habilita o trust proxy
 app.set('trust proxy', 1);
 
-// Limite de requisições por IP para duas tentativas por dia
+// Configuração do limitador de requisições
 const limiter = rateLimit({
     windowMs: 24 * 60 * 60 * 1000, // 24 horas
-    max: 2, // Permite 2 requisições
+    max: 2, // Máximo de 2 tentativas por IP por dia
     message: 'Limite de tentativas diárias excedido. Tente novamente amanhã.',
-    handler: (req, res) => {
-        res.status(429).json({ message: 'Limite de tentativas diárias excedido. Tente novamente amanhã.' });
-    },
     keyGenerator: (req) => req.ip,
 });
 
-app.use('/sua-rota-de-verificacao', limiter);
+// Aplica o limitador na rota específica
+app.use('/verificar-codigo', limiter); // Substitua '/verificar-codigo' pela rota correta
 
-// Resto do seu código do servidor
+// Sua lógica de verificação de código
+app.post('/verificar-codigo', (req, res) => {
+    const { codigo } = req.body;
+    if (codigo === '123456') { // Substitua pela lógica de verificação do código
+        return res.json({ message: 'Vaga confirmada!' });
+    }
+    return res.status(400).json({ message: 'Código inválido.' });
+});
 
+// Inicia o servidor
 app.listen(10000, () => {
     console.log('Servidor rodando na porta 10000');
 });
