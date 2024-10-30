@@ -1,71 +1,66 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser'); // Importa o cookie-parser
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Configuração inicial
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser()); // Habilita o cookie-parser
 
-// Configuração inicial de vagas e tentativas
+// Variáveis de controle
 let vagasRestantes = 10;
 const codigoDoDia = "123456";
-const tentativasPorIP = {};
+const maxTentativasPorIP = 2;
+const maxTentativasPorCookie = 2;
 
-// Função para resetar as vagas e tentativas diariamente
+// Função para resetar o número de vagas diariamente
 function resetarVagasDiarias() {
     vagasRestantes = 10;
-    for (let ip in tentativasPorIP) {
-        tentativasPorIP[ip] = 0;
-    }
-    console.log("Vagas e tentativas resetadas para o novo dia!");
+    console.log("Vagas resetadas para o novo dia!");
 }
+setInterval(resetarVagasDiarias, 86400000); // Reseta a cada 24 horas
 
-// Executa a função de reset a cada 24 horas (86400000 ms)
-setInterval(resetarVagasDiarias, 86400000);
-
-// Função para obter o IP do cliente mesmo através de proxies
-function obterIP(req) {
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    return ip.split(',')[0].trim(); // pega apenas o primeiro IP no caso de múltiplos IPs no cabeçalho
-}
-
-// Rota para verificar o código e disponibilidade de vagas
+// Rota para verificar o código
 app.post('/api/verify-code', (req, res) => {
     const { codigo } = req.body;
-    const ip = obterIP(req);
+    const userIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const cookieTentativas = req.cookies['tentativas'] || 0;
 
-    if (!tentativasPorIP[ip]) {
-        tentativasPorIP[ip] = 0;
-    }
-
-    if (tentativasPorIP[ip] >= 2) {
-        console.log(`IP ${ip} excedeu o limite diário de tentativas.`);
-        return res.status(429).json({ message: "Limite de tentativas diárias excedido" });
-    }
-
+    // Verifica se o código está correto
     if (codigo !== codigoDoDia) {
-        tentativasPorIP[ip] += 1;
-        console.log(`Tentativa com código incorreto para IP ${ip}. Tentativas: ${tentativasPorIP[ip]}`);
         return res.json({ message: "Código incorreto. Tente novamente." });
     }
 
-    if (vagasRestantes <= 0) {
-        return res.json({ message: "Vagas esgotadas." });
+    // Verifica o limite de tentativas baseado no IP
+    if (req.session[userIP] && req.session[userIP] >= maxTentativasPorIP) {
+        return res.json({ message: "Limite diário de tentativas excedido pelo IP." });
     }
 
-    vagasRestantes -= 1;
-    tentativasPorIP[ip] += 1;
-    console.log(`Vaga confirmada para IP ${ip}. Vagas restantes: ${vagasRestantes}. Tentativas: ${tentativasPorIP[ip]}`);
-    res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
+    // Verifica o limite de tentativas baseado no cookie
+    if (cookieTentativas >= maxTentativasPorCookie) {
+        return res.json({ message: "Limite diário de tentativas excedido no dispositivo." });
+    }
+
+    // Reduz o número de vagas e incrementa tentativas
+    if (vagasRestantes > 0) {
+        vagasRestantes -= 1;
+        req.session[userIP] = (req.session[userIP] || 0) + 1;
+        res.cookie('tentativas', parseInt(cookieTentativas) + 1, { maxAge: 86400000 }); // Incrementa o cookie e define expiração em 24h
+        res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
+    } else {
+        res.json({ message: "Vagas esgotadas." });
+    }
 });
 
-// Rota para obter o número de vagas restantes
+// Rota para retornar o número de vagas restantes
 app.get('/api/vagas-restantes', (req, res) => {
     res.json({ vagasRestantes });
 });
 
-// Inicia o servidor na porta especificada
+// Inicia o servidor
 app.listen(port, () => {
     console.log(`Servidor rodando na porta ${port}`);
 });
