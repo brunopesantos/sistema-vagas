@@ -3,20 +3,18 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
+app.set('trust proxy', true); // Configuração para capturar o IP real
 
-// Dados para armazenamento temporário de tentativas por IP
 let accessData = {};
 
-// Função de middleware para limitar o acesso baseado em IP
 app.use((req, res, next) => {
-    const ip = req.ip; 
-    const maxAttempts = 2; // Limite de tentativas
-    const timeWindow = 24 * 60 * 60 * 1000; // Janela de tempo de 24 horas
+    const ip = req.ip;
+    const maxAttempts = 2;
+    const timeWindow = 24 * 60 * 60 * 1000;
 
     console.log(`\n--- Verificação de acesso ---`);
     console.log(`IP do usuário: ${ip}`);
 
-    // Verificação por IP
     if (!accessData[ip]) {
         accessData[ip] = { attempts: 1, timestamp: Date.now() };
         console.log(`Primeira tentativa registrada para o IP ${ip}`);
@@ -38,10 +36,9 @@ app.use((req, res, next) => {
     next();
 });
 
-// Endpoint para verificar o código e permitir acesso
 app.post('/api/verify-code', (req, res) => {
     const { codigo } = req.body;
-    const codigoCorreto = '123456'; // Código correto para teste
+    const codigoCorreto = '123456';
 
     if (codigo === codigoCorreto) {
         console.log(`Código correto inserido para IP ${req.ip}`);
@@ -52,9 +49,8 @@ app.post('/api/verify-code', (req, res) => {
     }
 });
 
-// Endpoint para exibir o número de vagas restantes
 app.get('/api/vagas-restantes', (req, res) => {
-    const vagasRestantes = 10; // Valor fixo para exemplo
+    const vagasRestantes = 10;
     console.log(`Número de vagas restantes solicitado: ${vagasRestantes}`);
     res.json({ vagasRestantes });
 });
