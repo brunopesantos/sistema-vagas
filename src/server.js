@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser'); // Importando o cookie-parser
 
 const app = express();
+app.set('trust proxy', 1);
 const port = process.env.PORT || 3000;
 
 app.use(cors());
