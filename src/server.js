@@ -10,11 +10,14 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
+// Configuração do trust proxy
+app.set('trust proxy', 1); // Confia no primeiro proxy para obter o IP correto
+
 // Configuração do limitador de tentativas por IP
 const limiter = rateLimit({
     windowMs: 24 * 60 * 60 * 1000, // 24 horas
     max: 2, // Limita a 2 tentativas por IP por dia
-    keyGenerator: (req) => req.ip, // Usa o IP diretamente, ignorando o X-Forwarded-For
+    keyGenerator: (req) => req.ip, // Usa o IP diretamente
     handler: (req, res) => {
         res.status(429).json({
             message: 'Você excedeu o limite de tentativas diárias.',
@@ -55,9 +58,6 @@ function resetarVagasDiarias() {
 
 // Executa a função de reset a cada 24 horas (86400000 ms)
 setInterval(resetarVagasDiarias, 86400000);
-
-// Confia no proxy para obter o IP correto
-app.set('trust proxy', 1);
 
 // Inicia o servidor na porta especificada
 app.listen(port, () => {
