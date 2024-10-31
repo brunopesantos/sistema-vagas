@@ -8,13 +8,13 @@ app.use(cors());
 app.use(express.json());
 
 // Configuração inicial de vagas e tentativas
-let vagasRestantes = 10;
+let vagasRestantes = 3;
 const codigoDoDia = "123456";
 const tentativasPorIP = {};
 
 // Função para resetar as vagas e tentativas diariamente
 function resetarVagasDiarias() {
-    vagasRestantes = 10;
+    vagasRestantes = 3;
     for (let ip in tentativasPorIP) {
         tentativasPorIP[ip] = 0;
     }
