@@ -8,7 +8,7 @@ app.use(cors());
 app.use(express.json());
 
 // Configuração inicial de vagas e tentativas
-let vagasRestantes = 3;
+let vagasRestantes = 10;
 const codigoDoDia = "1777";
 let tentativasPorIP = {}; // Reseta quando o servidor é reiniciado (ex.: após deploy)
 
