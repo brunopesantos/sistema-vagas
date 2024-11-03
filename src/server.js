@@ -8,21 +8,9 @@ app.use(cors());
 app.use(express.json());
 
 // Configuração inicial de vagas e tentativas
-let vagasRestantes = 50;
+let vagasRestantes = 3; // Número de vagas deve ser atualizado manualmente
 const codigoDoDia = "1777";
 const tentativasPorIP = {};
-
-// Função para resetar as vagas e tentativas diariamente
-function resetarVagasDiarias() {
-    vagasRestantes = 50;
-    for (let ip in tentativasPorIP) {
-        tentativasPorIP[ip] = 0;
-    }
-    console.log("Vagas e tentativas resetadas para o novo dia!");
-}
-
-// Executa a função de reset a cada 24 horas (86400000 ms)
-setInterval(resetarVagasDiarias, 86400000);
 
 // Função para obter o IP do cliente mesmo através de proxies
 function obterIP(req) {
@@ -51,7 +39,8 @@ app.post('/api/verify-code', (req, res) => {
     }
 
     if (vagasRestantes <= 0) {
-        return res.json({ message: "Vagas esgotadas." });
+        console.log(`Vagas esgotadas. Tentativa de acesso bloqueada para IP ${ip}`);
+        return res.status(403).json({ message: "Vagas esgotadas." });
     }
 
     vagasRestantes -= 1;
