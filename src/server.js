@@ -1,9 +1,17 @@
 // server.js (Atualizado)
 const express = require('express');
+const cors = require('cors'); // Adicione isso
 const db = require('./db');
 const app = express();
 
 app.use(express.json());
+
+// Configure o CORS para permitir o seu domínio
+app.use(cors({
+    origin: 'https://robodevendasautomaticas.com.br', // Substitua pelo domínio da sua página de cadastro
+    methods: 'GET,POST',
+    allowedHeaders: 'Content-Type',
+}));
 
 // Rota para verificar vagas restantes
 app.get('/api/vagas-restantes', async (req, res) => {
