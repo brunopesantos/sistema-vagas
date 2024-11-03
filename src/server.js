@@ -34,7 +34,7 @@ app.post('/api/verify-code', (req, res) => {
         tentativasPorIP[ip] = 0;
     }
 
-    if (tentativasPorIP[ip] >= 2) {
+    if (tentativasPorIP[ip] >= 4) {
         console.log(`[AVISO] IP ${ip} excedeu o limite diário de tentativas.`);
         return res.status(429).json({ message: "Limite de tentativas diárias excedido" });
     }
