@@ -8,14 +8,16 @@ app.use(cors());
 app.use(express.json());
 
 // Configuração inicial de vagas e tentativas
-let vagasRestantes = 10;
+let vagasRestantes = 50;
 const codigoDoDia = "1777";
-let tentativasPorIP = {}; // Reseta quando o servidor é reiniciado (ex.: após deploy)
+let tentativasPorIP = {}; // Reinicia as tentativas ao iniciar o servidor
+
+console.log("Tentativas diárias resetadas ao iniciar o servidor.");
 
 // Função para obter o IP do cliente mesmo através de proxies
 function obterIP(req) {
     const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    return ip.split(',')[0].trim(); // pega apenas o primeiro IP no caso de múltiplos IPs no cabeçalho
+    return ip.split(',')[0].trim(); // Pega apenas o primeiro IP no caso de múltiplos IPs no cabeçalho
 }
 
 // Rota para verificar o código e disponibilidade de vagas
@@ -39,14 +41,14 @@ app.post('/api/verify-code', (req, res) => {
     }
 
     if (vagasRestantes <= 0) {
+        console.log(`Tentativa de acesso bloqueada para IP ${ip} por falta de vagas.`);
         return res.json({ message: "Vagas esgotadas." });
     }
 
-    // Se o código estiver correto, decrementa a vaga e registra a tentativa com sucesso
     vagasRestantes -= 1;
     tentativasPorIP[ip] += 1;
     console.log(`Vaga confirmada para IP ${ip}. Vagas restantes: ${vagasRestantes}. Tentativas: ${tentativasPorIP[ip]}`);
-    res.json({ message: "Vaga confirmada! Redirecionando para a triagem..." });
+    res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
 });
 
 // Rota para obter o número de vagas restantes
@@ -54,9 +56,7 @@ app.get('/api/vagas-restantes', (req, res) => {
     res.json({ vagasRestantes });
 });
 
-// Inicia o servidor na porta especificada e reseta as tentativas ao iniciar
+// Inicia o servidor na porta especificada
 app.listen(port, () => {
-    tentativasPorIP = {}; // Reseta as tentativas quando o servidor reinicia
     console.log(`Servidor rodando na porta ${port}`);
-    console.log("Tentativas diárias resetadas ao iniciar o servidor.");
 });
