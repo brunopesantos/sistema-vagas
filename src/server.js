@@ -8,9 +8,9 @@ app.use(cors());
 app.use(express.json());
 
 // Configuração inicial de vagas e tentativas
-let vagasRestantes = 3; // Número de vagas deve ser atualizado manualmente
+let vagasRestantes = 3;
 const codigoDoDia = "1777";
-const tentativasPorIP = {};
+let tentativasPorIP = {}; // Reseta quando o servidor é reiniciado (ex.: após deploy)
 
 // Função para obter o IP do cliente mesmo através de proxies
 function obterIP(req) {
@@ -39,14 +39,14 @@ app.post('/api/verify-code', (req, res) => {
     }
 
     if (vagasRestantes <= 0) {
-        console.log(`Vagas esgotadas. Tentativa de acesso bloqueada para IP ${ip}`);
-        return res.status(403).json({ message: "Vagas esgotadas." });
+        return res.json({ message: "Vagas esgotadas." });
     }
 
+    // Se o código estiver correto, decrementa a vaga e registra a tentativa com sucesso
     vagasRestantes -= 1;
     tentativasPorIP[ip] += 1;
     console.log(`Vaga confirmada para IP ${ip}. Vagas restantes: ${vagasRestantes}. Tentativas: ${tentativasPorIP[ip]}`);
-    res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
+    res.json({ message: "Vaga confirmada! Redirecionando para a triagem..." });
 });
 
 // Rota para obter o número de vagas restantes
@@ -54,7 +54,9 @@ app.get('/api/vagas-restantes', (req, res) => {
     res.json({ vagasRestantes });
 });
 
-// Inicia o servidor na porta especificada
+// Inicia o servidor na porta especificada e reseta as tentativas ao iniciar
 app.listen(port, () => {
+    tentativasPorIP = {}; // Reseta as tentativas quando o servidor reinicia
     console.log(`Servidor rodando na porta ${port}`);
+    console.log("Tentativas diárias resetadas ao iniciar o servidor.");
 });
