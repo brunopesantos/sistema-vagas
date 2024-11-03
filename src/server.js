@@ -16,8 +16,16 @@ console.log("Tentativas diárias resetadas ao iniciar o servidor.");
 
 // Função para obter o IP do cliente mesmo através de proxies
 function obterIP(req) {
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    return ip.split(',')[0].trim(); // Pega apenas o primeiro IP no caso de múltiplos IPs no cabeçalho
+    let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    ip = ip.split(',')[0].trim(); // Pega apenas o primeiro IP no caso de múltiplos IPs no cabeçalho
+
+    // Remove o prefixo '::ffff:' se estiver presente
+    if (ip.startsWith('::ffff:')) {
+        ip = ip.substring(7);
+    }
+
+    console.log(`IP detectado: ${ip}`); // Log para depuração
+    return ip;
 }
 
 // Rota para verificar o código e disponibilidade de vagas
