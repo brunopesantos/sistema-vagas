@@ -14,15 +14,17 @@ function obterVagas(callback) {
         if (err) {
             console.error('Erro ao buscar vagas:', err);
             callback(err, null);
-        } else {
+        } else if (results.length > 0) {
             callback(null, results[0].vagasRestantes);
+        } else {
+            callback(new Error('Nenhum resultado encontrado.'), null);
         }
     });
 }
 
 // Função para atualizar o número de vagas
 function atualizarVagas(novasVagas, callback) {
-    db.query('UPDATE vagas SET vagasRestantes = ? WHERE id = 1', [novasVagas], (err, results) => {
+    db.query('UPDATE vagas SET vagasRestantes = ? WHERE id = 1', [novasVagas], (err) => {
         if (err) {
             console.error('Erro ao atualizar vagas:', err);
             callback(err);
@@ -67,21 +69,6 @@ app.get('/api/vagas-restantes', (req, res) => {
             return res.status(500).json({ message: 'Erro ao buscar vagas.' });
         }
         res.json({ vagasRestantes });
-    });
-});
-
-// Rota para redefinir o número de vagas
-app.post('/api/redefinir-vagas', (req, res) => {
-    const { novasVagas } = req.body;
-    if (typeof novasVagas !== 'number' || novasVagas < 0) {
-        return res.status(400).json({ message: 'Número de vagas inválido' });
-    }
-
-    atualizarVagas(novasVagas, (err) => {
-        if (err) {
-            return res.status(500).json({ message: 'Erro ao redefinir vagas.' });
-        }
-        res.json({ message: `Número de vagas redefinido para ${novasVagas}` });
     });
 });
 
