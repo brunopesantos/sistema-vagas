@@ -10,19 +10,19 @@ app.use(express.json());
 
 // Função para buscar o número de vagas
 function obterVagas(callback) {
-    db.get(`SELECT vagasRestantes FROM vagas WHERE id = 1`, (err, row) => {
+    db.query('SELECT vagasRestantes FROM vagas WHERE id = 1', (err, results) => {
         if (err) {
             console.error('Erro ao buscar vagas:', err);
             callback(err, null);
         } else {
-            callback(null, row.vagasRestantes);
+            callback(null, results[0].vagasRestantes);
         }
     });
 }
 
 // Função para atualizar o número de vagas
 function atualizarVagas(novasVagas, callback) {
-    db.run(`UPDATE vagas SET vagasRestantes = ? WHERE id = 1`, [novasVagas], (err) => {
+    db.query('UPDATE vagas SET vagasRestantes = ? WHERE id = 1', [novasVagas], (err, results) => {
         if (err) {
             console.error('Erro ao atualizar vagas:', err);
             callback(err);
