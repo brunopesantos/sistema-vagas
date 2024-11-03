@@ -1,38 +1,12 @@
+// server.js
 const express = require('express');
-const cors = require('cors');
-const db = require('./db');
+const bodyParser = require('body-parser');
+const db = require('./db'); // Importando o db.js atualizado com o pool de conexões
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
-app.use(cors());
-app.use(express.json());
-
-// Função para buscar o número de vagas
-function obterVagas(callback) {
-    db.query('SELECT vagasRestantes FROM vagas WHERE id = 1', (err, results) => {
-        if (err) {
-            console.error('Erro ao buscar vagas:', err);
-            callback(err, null);
-        } else if (results.length > 0) {
-            callback(null, results[0].vagasRestantes);
-        } else {
-            callback(new Error('Nenhum resultado encontrado.'), null);
-        }
-    });
-}
-
-// Função para atualizar o número de vagas
-function atualizarVagas(novasVagas, callback) {
-    db.query('UPDATE vagas SET vagasRestantes = ? WHERE id = 1', [novasVagas], (err) => {
-        if (err) {
-            console.error('Erro ao atualizar vagas:', err);
-            callback(err);
-        } else {
-            callback(null);
-        }
-    });
-}
+app.use(bodyParser.json());
 
 // Rota para verificar o código e disponibilidade de vagas
 app.post('/api/verify-code', (req, res) => {
@@ -43,18 +17,21 @@ app.post('/api/verify-code', (req, res) => {
         return res.status(400).json({ message: "Código incorreto. Tente novamente." });
     }
 
-    obterVagas((err, vagasRestantes) => {
+    db.query('SELECT vagasRestantes FROM vagas WHERE id = 1', (err, results) => {
         if (err) {
+            console.error('Erro ao buscar vagas:', err);
             return res.status(500).json({ message: 'Erro ao buscar vagas.' });
         }
 
-        if (vagasRestantes <= 0) {
+        if (results.length === 0 || results[0].vagasRestantes <= 0) {
             return res.json({ message: "Vagas esgotadas." });
         }
 
-        const novasVagas = vagasRestantes - 1;
-        atualizarVagas(novasVagas, (err) => {
+        const vagasRestantes = results[0].vagasRestantes - 1;
+        
+        db.query('UPDATE vagas SET vagasRestantes = ? WHERE id = 1', [vagasRestantes], (err) => {
             if (err) {
+                console.error('Erro ao atualizar vagas:', err);
                 return res.status(500).json({ message: 'Erro ao atualizar vagas.' });
             }
             res.json({ message: "Vaga confirmada! Redirecionando para a página de venda..." });
@@ -62,17 +39,22 @@ app.post('/api/verify-code', (req, res) => {
     });
 });
 
-// Rota para obter o número de vagas restantes
+// Rota para verificar o número de vagas restantes
 app.get('/api/vagas-restantes', (req, res) => {
-    obterVagas((err, vagasRestantes) => {
+    db.query('SELECT vagasRestantes FROM vagas WHERE id = 1', (err, results) => {
         if (err) {
+            console.error('Erro ao buscar vagas:', err);
             return res.status(500).json({ message: 'Erro ao buscar vagas.' });
         }
-        res.json({ vagasRestantes });
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Nenhuma informação de vagas encontrada.' });
+        }
+
+        res.json({ vagasRestantes: results[0].vagasRestantes });
     });
 });
 
-// Inicia o servidor
-app.listen(port, () => {
-    console.log(`Servidor rodando na porta ${port}`);
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
