@@ -7,7 +7,7 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-let vagasRestantes = 50;
+let vagasRestantes = 5;
 const codigoDoDia = "1777";
 let tentativasPorIP = {};
 
