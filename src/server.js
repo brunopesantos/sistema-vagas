@@ -39,7 +39,7 @@ app.get('/api/vagas-restantes', async (req, res) => {
 // Rota para verificar o código e atualizar as vagas
 app.post('/api/verify-code', async (req, res) => {
     const { codigo } = req.body;
-    const codigoDoDia = "4548";
+    const codigoDoDia = "7878";
     const ip = getClientIp(req);
 
     console.log(`[LOG] Requisição recebida: Método: POST, URL: /api/verify-code, IP: ${ip}`);
